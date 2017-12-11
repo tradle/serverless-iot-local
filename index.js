@@ -13,7 +13,8 @@ const VERBOSE = typeof process.env.SLS_DEBUG !== 'undefined'
 const defaultOpts = {
   location: '.',
   port: 1884,
-  noStart: false
+  noStart: false,
+  skipCacheInvalidation: false
 }
 
 class ServerlessIotLocal {
@@ -40,6 +41,10 @@ class ServerlessIotLocal {
               noStart: {
                 shortcut: 'n',
                 usage: 'Do not start local MQTT broker (in case it is already running)',
+              },
+              skipCacheInvalidation: {
+                usage: 'Tells the plugin to skip require cache invalidation. A script reloading tool like Nodemon might then be needed',
+                shortcut: 'c',
               },
             }
           }
