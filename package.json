@@ -1,0 +1,21 @@
+{
+  "name": "serverless-iot-local",
+  "version": "1.0.0",
+  "description": "local iot events for the Serverless Framework",
+  "main": "index.js",
+  "repository": "https://github.com/tradle/serverless-iot-local",
+  "author": "mvayngrib",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk-mock": "^1.7.0",
+    "lodash": "^4.17.4",
+    "mosca": "^2.6.0",
+    "mqtt": "^2.13.1",
+    "mqtt-match": "^1.0.3",
+    "redis": "^2.8.0"
+  },
+  "peerDependencies": {
+    "aws-sdk": "*",
+    "serverless-offline": "*"
+  }
+}
