@@ -32,8 +32,9 @@ plugins:
 CLI options are optional:
 
 ```
---port  		  -p  Port to listen on. Default: 1884
---no-start    -n  Prevent Mosca MQTT server from being started (if you already have one)
+--port                -p  Port to listen on. Default: 1884
+--noStart             -n  Prevent Iot broker (Mosca MQTT brorker) from being started (if you already have one)
+--skipCacheValidation -c  Tells the plugin to skip require cache invalidation. A script reloading tool like Nodemon might then be needed (same as serverless-offline)
 ```
 
 The above options can be added to serverless.yml to set default configuration, e.g.:
