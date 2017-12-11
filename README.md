@@ -32,7 +32,8 @@ plugins:
 CLI options are optional:
 
 ```
---port                -p  Port to listen on. Default: 1884
+--port                -p  Port to listen on. Default: 1883
+--httpPort            -h  Port for WebSocket connections. Default: 1884
 --noStart             -n  Prevent Iot broker (Mosca MQTT brorker) from being started (if you already have one)
 --skipCacheValidation -c  Tells the plugin to skip require cache invalidation. A script reloading tool like Nodemon might then be needed (same as serverless-offline)
 ```

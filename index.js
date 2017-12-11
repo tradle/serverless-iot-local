@@ -12,7 +12,8 @@ const createLambdaContext = require('serverless-offline/src/createLambdaContext'
 const VERBOSE = typeof process.env.SLS_DEBUG !== 'undefined'
 const defaultOpts = {
   location: '.',
-  port: 1884,
+  port: 1883,
+  httpPort: 1884,
   noStart: false,
   skipCacheInvalidation: false
 }
@@ -35,8 +36,12 @@ class ServerlessIotLocal {
             lifecycleEvents: ['startHandler'],
             options: {
               port: {
-                usage: 'MQTT port. Default: 1884',
+                usage: 'MQTT port. Default: 1883',
                 shortcut: 'p'
+              },
+              httpPort: {
+                usage: 'http port for client connections over WebSockets. Default: 1884',
+                shortcut: 'h'
               },
               noStart: {
                 shortcut: 'n',
@@ -82,18 +87,16 @@ class ServerlessIotLocal {
   }
 
   _createMQTTBroker() {
-    const { port } = this.options
+    const { port, httpPort } = this.options
     this.mqttBroker = createMQTTBroker({
-      interfaces: [
-        {
-          type: 'http',
-          port,
-          bundle: true
-        }
-      ]
+      port,
+      http: {
+        port: httpPort,
+        bundle: true
+      }
     })
 
-    const endpointAddress = `localhost:${port}`
+    const endpointAddress = `localhost:${httpPort}`
 
     // prime AWS IotData import
     // this is necessary for below mock to work
@@ -114,11 +117,11 @@ class ServerlessIotLocal {
       })
     })
 
-    this.log(`Iot broker listening on port ${port}`)
+    this.log(`Iot broker listening on ports: ${port} (mqtt) and ${httpPort} (http)`)
   }
 
   _createMQTTClient() {
-    const { port, location } = this.options
+    const { port, httpPort, location } = this.options
     const topicsToFunctionsMap = {}
     const { runtime } = this.service.provider
     Object.keys(this.service.functions).forEach(key => {
@@ -162,7 +165,7 @@ class ServerlessIotLocal {
       })
     })
 
-    const client = mqtt.connect(`ws://localhost:${port}/mqqt`)
+    const client = mqtt.connect(`ws://localhost:${httpPort}/mqqt`)
     client.on('error', console.error)
     client.on('connect', () => {
       this.log('connected to local Iot broker')
