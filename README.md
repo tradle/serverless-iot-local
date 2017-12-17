@@ -59,8 +59,9 @@ plugins:
   - serverless-offline
 ```
 
+## Todo
 
-## Links
+- Improve support of AWS Iot SQL syntax (work in progress on [sql branch](./blob/sql))
 
 ## License
 [MIT](LICENSE)

@@ -5,6 +5,9 @@ const mqttMatch = require('mqtt-match')
 const realAWS = require('aws-sdk')
 const AWS = require('aws-sdk-mock')
 AWS.setSDK(path.resolve('node_modules/aws-sdk'))
+const extend = require('xtend')
+const SQL = require('./sql')
+const evalInContext = require('./eval')
 const createMQTTBroker = require('./broker')
 // TODO: send PR to serverless-offline to export this
 const functionHelper = require('serverless-offline/src/functionHelper')
@@ -151,7 +154,10 @@ class ServerlessIotLocal {
 
         const { iot } = event
         const { sql } = iot
-        const topicMatcher = sql.match(/FROM '([^']+)'/)[1]
+        // hack
+        // assumes SELECT ... topic() as topic
+        const parsed = SQL.parseSelect(sql)
+        const topicMatcher = parsed.topic
         if (!topicsToFunctionsMap[topicMatcher]) {
           topicsToFunctionsMap[topicMatcher] = []
         }
@@ -160,7 +166,8 @@ class ServerlessIotLocal {
         topicsToFunctionsMap[topicMatcher].push({
           fn: fun,
           name: key,
-          options: funOptions
+          options: funOptions,
+          select: parsed.select
         })
       })
     })
@@ -180,19 +187,28 @@ class ServerlessIotLocal {
 
       if (!matches.length) return
 
-      const event = JSON.parse(message)
-      // hack
-      // assumes SELECT ... topic() as topic
-      if (!event.topic) {
-        event.topic = topic
+      let clientId
+      if (/^\$aws\/events/.test(topic)) {
+        clientId = topic.slice(topic.lastIndexOf('/') + 1)
+      } else {
+        // hmm...
       }
 
       matches.forEach(topicMatcher => {
         let functions = topicsToFunctionsMap[topicMatcher]
         functions.forEach(fnInfo => {
-          const { fn, name, options } = fnInfo
+          const { fn, name, options, select } = fnInfo
           const requestId = Math.random().toString().slice(2)
           this.requests[requestId] = { done: false }
+
+          const event = SQL.applySelect({
+            select,
+            payload: message,
+            context: {
+              topic: () => topic,
+              clientid: () => clientId
+            }
+          })
 
           let handler // The lambda function
           try {
