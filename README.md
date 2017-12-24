@@ -61,7 +61,7 @@ plugins:
 
 ## Todo
 
-- Improve support of AWS Iot SQL syntax (work in progress on [sql branch](./blob/sql))
+- Improve support of AWS Iot SQL syntax
 
 ## License
 [MIT](LICENSE)
