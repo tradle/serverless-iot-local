@@ -123,6 +123,17 @@ class ServerlessIotLocal {
     this.log(`Iot broker listening on ports: ${port} (mqtt) and ${httpPort} (http)`)
   }
 
+  _getServerlessOfflinePort() {
+    // hackeroni!
+    const offline = this.serverless.pluginManager.plugins.find(
+      plugin => plugin.commands && plugin.commands.offline
+    )
+
+    if (offline) {
+      return offline.options.port
+    }
+  }
+
   _createMQTTClient() {
     const { port, httpPort, location } = this.options
     const topicsToFunctionsMap = {}
@@ -194,6 +205,7 @@ class ServerlessIotLocal {
         // hmm...
       }
 
+      const apiGWPort = this._getServerlessOfflinePort()
       matches.forEach(topicMatcher => {
         let functions = topicsToFunctionsMap[topicMatcher]
         functions.forEach(fnInfo => {
@@ -213,6 +225,7 @@ class ServerlessIotLocal {
           let handler // The lambda function
           try {
             process.env = _.extend({}, this.service.provider.environment, this.service.functions[name].environment, this.originalEnvironment)
+            process.env.SERVERLESS_OFFLINE_PORT = apiGWPort
             handler = functionHelper.createHandler(options, this.options)
           } catch (err) {
             this.log(`Error while loading ${name}: ${err.stack}, ${requestId}`)
