@@ -28,15 +28,26 @@ const parseSelectPart = part => {
   }
 }
 
-const applySelect = ({ select, payload, context }) => {
-  const event = {}
-  let json
-  try {
-    json = JSON.parse(payload)
-  } catch (err) {
-    json = payload
+const brace = new Buffer('{')[0]
+const bracket = new Buffer('[')[0]
+const doubleQuote = new Buffer('"')[0]
+// to avoid stopping here when Stop on Caught Exceptions is on
+const maybeParseJSON = val => {
+  switch (val[0]) {
+  case brace:
+  case bracket:
+  case doubleQuote:
+    try {
+      return JSON.parse(val)
+    } catch (err) {}
   }
 
+  return val
+}
+
+const applySelect = ({ select, payload, context }) => {
+  const event = {}
+  const json = maybeParseJSON(payload)
   if (select.length === 1 && !select[0].alias) {
     return json
   }
