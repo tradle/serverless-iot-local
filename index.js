@@ -6,6 +6,7 @@ const realAWS = require('aws-sdk')
 const AWS = require('aws-sdk-mock')
 AWS.setSDK(path.resolve('node_modules/aws-sdk'))
 const extend = require('xtend')
+const IP = require('ip')
 const SQL = require('./sql')
 const evalInContext = require('./eval')
 const createMQTTBroker = require('./broker')
@@ -14,6 +15,7 @@ const functionHelper = require('serverless-offline/src/functionHelper')
 const createLambdaContext = require('serverless-offline/src/createLambdaContext')
 const VERBOSE = typeof process.env.SLS_DEBUG !== 'undefined'
 const defaultOpts = {
+  host: 'localhost',
   location: '.',
   port: 1883,
   httpPort: 1884,
@@ -38,8 +40,13 @@ class ServerlessIotLocal {
             usage: 'Start local Iot broker.',
             lifecycleEvents: ['startHandler'],
             options: {
+              host: {
+                usage: 'host name to listen on. Default: localhost',
+                // match serverless-offline option shortcuts
+                shortcut: 'o'
+              },
               port: {
-                usage: 'MQTT port. Default: 1883',
+                usage: 'MQTT port to listen on. Default: 1883',
                 shortcut: 'p'
               },
               httpPort: {
@@ -90,16 +97,18 @@ class ServerlessIotLocal {
   }
 
   _createMQTTBroker() {
-    const { port, httpPort } = this.options
+    const { host, port, httpPort } = this.options
     this.mqttBroker = createMQTTBroker({
+      host,
       port,
       http: {
+        host,
         port: httpPort,
         bundle: true
       }
     })
 
-    const endpointAddress = `localhost:${httpPort}`
+    const endpointAddress = `${IP.address()}:${httpPort}`
 
     // prime AWS IotData import
     // this is necessary for below mock to work
