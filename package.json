@@ -1,6 +1,6 @@
 {
   "name": "serverless-iot-local",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "local iot events for the Serverless Framework",
   "main": "index.js",
   "repository": "https://github.com/tradle/serverless-iot-local",
