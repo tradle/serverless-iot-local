@@ -1,6 +1,6 @@
 const evalInContext = require('./eval')
 const BASE64_PLACEHOLDER = '*b64'
-const SQL_REGEX = /^SELECT (.*) FROM '([^']+)'$/
+const SQL_REGEX = /^SELECT (.*)\s+FROM\s+'([^']+)'\s*(?:WHERE\s(.*))?$/
 const SELECT_PART_REGEX = /^(.*?)(?: as (.*))?$/
 
 const parseSelect = sql => {
@@ -8,7 +8,7 @@ const parseSelect = sql => {
   //   throw new Error(`AWS Iot SQL functions in this sql are not yet supported: ${sql}`)
   // }
 
-  const [select, topic] = sql.match(SQL_REGEX).slice(1)
+  const [select, topic, where] = sql.match(SQL_REGEX).slice(1)
   return {
     select: select
       // hack
@@ -16,6 +16,7 @@ const parseSelect = sql => {
       .split(',')
       .map(s => s.trim())
       .map(parseSelectPart),
+    where,
     topic
   }
 }
@@ -73,5 +74,6 @@ const applySelect = ({ select, payload, context }) => {
 
 module.exports = {
   parseSelect,
-  applySelect
+  applySelect,
+  // parseWhere
 }
