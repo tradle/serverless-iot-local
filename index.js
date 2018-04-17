@@ -194,7 +194,13 @@ class ServerlessIotLocal {
 
     const client = mqtt.connect(`ws://localhost:${httpPort}/mqqt`)
     client.on('error', console.error)
+
+    const connectMonitor = setInterval(() => {
+      this.log(`still haven't connected to local Iot broker!`)
+    }, 5000).unref()
+
     client.on('connect', () => {
+      clearInterval(connectMonitor)
       this.log('connected to local Iot broker')
       for (let topicMatcher in topicsToFunctionsMap) {
         client.subscribe(topicMatcher)
