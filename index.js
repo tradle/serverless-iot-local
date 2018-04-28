@@ -109,19 +109,26 @@ class ServerlessIotLocal {
   }
 
   _createMQTTBroker() {
-    const { host, port, httpPort, redisHost, redisPort, redisDB } = this.options
-    this.mqttBroker = createMQTTBroker({
+    const { host, port, httpPort } = this.options
+    const { redisHost, redisPort, redisDB } = this.options
+
+    const ascoltatore = {
+      redisHost,
+      redisPort,
+      redisDB
+    }
+
+    const mosca = {
       host,
       port,
       http: {
         host,
         port: httpPort,
         bundle: true
-      },
-      redisHost,
-      redisPort,
-      redisDB
-    })
+      }
+    }
+
+    this.mqttBroker = createMQTTBroker(ascoltatore, mosca)
 
     const endpointAddress = `${IP.address()}:${httpPort}`
 
@@ -140,7 +147,8 @@ class ServerlessIotLocal {
 
     AWS.mock('Iot', 'describeEndpoint', (params, callback) => {
       process.nextTick(() => {
-        callback(null, { endpointAddress })
+        // Parameter params is optional.
+        (callback || params)(null, { endpointAddress })
       })
     })
 

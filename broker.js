@@ -23,7 +23,13 @@ function createAWSLifecycleEvent ({ type, clientId, topics }) {
   return event
 }
 
-function createBroker (opts) {
+/**
+ * https://github.com/aws/aws-sdk-js/blob/master/clients/iot.d.ts#L349
+ * 
+ * @param {Object} opts Module options
+ * @param {Object} moscaOpts Mosca options
+ */
+function createBroker (opts, moscaOpts) {
   const { redisHost, redisPort, redisDB } = opts
 
   const ascoltatore = {
@@ -39,12 +45,12 @@ function createBroker (opts) {
     // port: 1883,
     backend: ascoltatore,
     persistence: {
-    factory: mosca.persistence.Redis
+      factory: mosca.persistence.Redis
     }
   }
 
-  opts = Object.assign({}, moscaSettings, opts)
-  const server = new mosca.Server(opts)
+  moscaOpts = Object.assign({}, moscaSettings, moscaOpts)
+  const server = new mosca.Server(moscaOpts)
   server.on('ready', setup)
 
   // fired when a message is received
