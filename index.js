@@ -123,7 +123,7 @@ class ServerlessIotLocal {
       this.mqttBroker.publish({ topic, payload }, callback)
     })
 
-    AWS.mock('Iot', 'describeEndpoint', callback => {
+    AWS.mock('Iot', 'describeEndpoint', (params, callback) => {
       process.nextTick(() => {
         callback(null, { endpointAddress })
       })
