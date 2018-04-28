@@ -20,7 +20,10 @@ const defaultOpts = {
   port: 1883,
   httpPort: 1884,
   noStart: false,
-  skipCacheInvalidation: false
+  skipCacheInvalidation: false,
+  redisHost: 'localhost',
+  redisPort: 6379,
+  redisDB: 12
 }
 
 class ServerlessIotLocal {
@@ -61,6 +64,15 @@ class ServerlessIotLocal {
                 usage: 'Tells the plugin to skip require cache invalidation. A script reloading tool like Nodemon might then be needed',
                 shortcut: 'c',
               },
+              redisHost: {
+                usage: 'Redis host. Default: localhost',
+              },
+              redisPort: {
+                usage: 'Redis port. Default: 6379',
+              },
+              redisDB: {
+                usage: 'Redis database. Default: 12',
+              },
             }
           }
         }
@@ -97,7 +109,7 @@ class ServerlessIotLocal {
   }
 
   _createMQTTBroker() {
-    const { host, port, httpPort } = this.options
+    const { host, port, httpPort, redisHost, redisPort, redisDB } = this.options
     this.mqttBroker = createMQTTBroker({
       host,
       port,
@@ -105,7 +117,10 @@ class ServerlessIotLocal {
         host,
         port: httpPort,
         bundle: true
-      }
+      },
+      redisHost,
+      redisPort,
+      redisDB
     })
 
     const endpointAddress = `${IP.address()}:${httpPort}`
