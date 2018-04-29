@@ -152,35 +152,6 @@ class ServerlessIotLocal {
       })
     })
 
-    AWS.mock('STS', 'getCallerIdentity', (params, callback) => {
-      process.nextTick(() => {
-        callback(null, { 
-            ResponseMetadata: { RequestId: `offlineContext_requestId_${_.random()}` },
-            UserId: 'offlineContext_userId',
-            Account: 'offlineContext_accountId',
-            Arn: 'arn:aws:sts::offlineContext_accountId:assumed-role/LambdaExecution/offlineContext_caller'
-        })
-      })
-    })
-
-    AWS.mock('STS', 'assumeRole', (params, callback) => {
-      process.nextTick(() => {
-        callback(null, { 
-            ResponseMetadata: { RequestId: `offlineContext_requestId_${_.random()}` },
-            Credentials: { 
-                AccessKeyId: 'offlineContext_accessKeyId',
-                SecretAccessKey: 'offlineContext_secretAccessKey',
-                SessionToken: 'offlineContext_sessionToken',
-                Expiration: new Date()
-            },
-            AssumedRoleUser: {
-                AssumedRoleId: 'offlineContext_assumedRoleId',
-                Arn: 'arn:aws:sts::offlineContext_accountId:assumed-role/LambdaExecution/offlineContext_caller'
-            }
-        })
-      })
-    })
-
     this.log(`Iot broker listening on ports: ${port} (mqtt) and ${httpPort} (http)`)
   }
 
