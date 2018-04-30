@@ -7,6 +7,7 @@ const AWS = require('aws-sdk-mock')
 AWS.setSDK(path.resolve('node_modules/aws-sdk'))
 const extend = require('xtend')
 const IP = require('ip')
+const redis = require('redis')
 const SQL = require('./sql')
 const evalInContext = require('./eval')
 const createMQTTBroker = require('./broker')
@@ -20,10 +21,16 @@ const defaultOpts = {
   port: 1883,
   httpPort: 1884,
   noStart: false,
-  skipCacheInvalidation: false,
-  redisHost: 'localhost',
-  redisPort: 6379,
-  redisDB: 12
+  skipCacheInvalidation: false
+}
+
+const ascoltatoreOpts = {
+  type: 'redis',
+  redis,
+  host: 'localhost',
+  port: 6379,
+  db: 12,
+  return_buffers: true // to handle binary payloads
 }
 
 class ServerlessIotLocal {
@@ -64,15 +71,6 @@ class ServerlessIotLocal {
                 usage: 'Tells the plugin to skip require cache invalidation. A script reloading tool like Nodemon might then be needed',
                 shortcut: 'c',
               },
-              redisHost: {
-                usage: 'Redis host. Default: localhost',
-              },
-              redisPort: {
-                usage: 'Redis port. Default: 6379',
-              },
-              redisDB: {
-                usage: 'Redis database. Default: 12',
-              },
             }
           }
         }
@@ -110,13 +108,6 @@ class ServerlessIotLocal {
 
   _createMQTTBroker() {
     const { host, port, httpPort } = this.options
-    const { redisHost, redisPort, redisDB } = this.options
-
-    const ascoltatore = {
-      redisHost,
-      redisPort,
-      redisDB
-    }
 
     const mosca = {
       host,
@@ -127,6 +118,11 @@ class ServerlessIotLocal {
         bundle: true
       }
     }
+
+    // For now we'll only support redis backend.
+    const redisConfigOpts = this.options.redis;
+
+    const ascoltatore = _.merge({}, ascoltatoreOpts, redisConfigOpts)
 
     this.mqttBroker = createMQTTBroker(ascoltatore, mosca)
 
