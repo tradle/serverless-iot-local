@@ -18,10 +18,15 @@ const VERBOSE = typeof process.env.SLS_DEBUG !== 'undefined'
 const defaultOpts = {
   host: 'localhost',
   location: '.',
-  port: 1883,
-  httpPort: 1884,
+  port: 1883, // HTTP
+  securePort: 8883, // HTTPS
+  httpPort: 1884, // WS
+  httpsPort: 1885, // WSS
   noStart: false,
-  skipCacheInvalidation: false
+  skipCacheInvalidation: false,
+  endpointAddressSSL: false,
+  keyPath: '',
+  certPath: ''
 }
 
 const ascoltatoreOpts = {
@@ -63,6 +68,10 @@ class ServerlessIotLocal {
                 usage: 'http port for client connections over WebSockets. Default: 1884',
                 shortcut: 'h'
               },
+              httpsPort: {
+                usage: 'https port for client connections over WebSockets. Default: 1885',
+                shortcut: 's'
+              },
               noStart: {
                 shortcut: 'n',
                 usage: 'Do not start local MQTT broker (in case it is already running)',
@@ -70,6 +79,15 @@ class ServerlessIotLocal {
               skipCacheInvalidation: {
                 usage: 'Tells the plugin to skip require cache invalidation. A script reloading tool like Nodemon might then be needed',
                 shortcut: 'c',
+              },
+              endpointAddressSSL: {
+                usage: 'Instructs this plugin to use the SSL port for the endpoint address'
+              },
+              keyPath: {
+                usage: 'Path to the private key file'
+              },
+              certPath: {
+                usage: 'Path to the certificate file'
               },
             }
           }
@@ -108,6 +126,7 @@ class ServerlessIotLocal {
 
   _createMQTTBroker() {
     const { host, port, httpPort } = this.options
+    const { securePort, httpsPort, keyPath, certPath, endpointAddressSSL } = this.options
 
     const mosca = {
       host,
@@ -119,6 +138,30 @@ class ServerlessIotLocal {
       }
     }
 
+    if (httpsPort) {
+      _.merge(mosca, {
+        secure: {
+          port: securePort
+        },
+        https: {
+          host,
+          port: httpsPort,
+          bundle: true
+        },
+        onlyHttp: false
+      })
+
+      if(keyPath && certPath) {
+        _.merge(mosca, {
+          secure: {
+            keyPath,
+            certPath
+          },
+          allowNonSecure: true
+        })
+      }
+    }
+
     // For now we'll only support redis backend.
     const redisConfigOpts = this.options.redis;
 
@@ -126,7 +169,8 @@ class ServerlessIotLocal {
 
     this.mqttBroker = createMQTTBroker(ascoltatore, mosca)
 
-    const endpointAddress = `${IP.address()}:${httpPort}`
+    const endpointPort = (endpointAddressSSL) ? httpsPort : httpPort;
+    const endpointAddress = `${host}:${endpointPort}`
 
     // prime AWS IotData import
     // this is necessary for below mock to work

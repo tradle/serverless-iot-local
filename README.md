@@ -51,6 +51,9 @@ custom:
       host: 'localhost'
       port: 6379
       db: 12
+    endpointAddressSSL: true
+    keyPath: contrib/secure/tls-key.pem
+    certPath: contrib/secure/tls-cert.pem
 ```
 
 ### Using with serverless-offline plugin
