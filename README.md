@@ -47,9 +47,10 @@ custom:
       port: 1884
     # Uncomment only if you already have an MQTT server running locally
     # noStart: true
-      redisHost: 'localhost'
-      redisPort: 6379
-      redisDB: 12
+      redis:
+        host: 'localhost'
+        port: 6379
+        db: 12
 ```
 
 ### Using with serverless-offline plugin
