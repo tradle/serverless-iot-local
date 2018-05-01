@@ -1,21 +1,4 @@
 const mosca = require('mosca')
-const redis = require('redis')
-const ascoltatore = {
-  type: 'redis',
-  redis,
-  db: 12,
-  port: 6379,
-  return_buffers: true, // to handle binary payloads
-  host: 'localhost'
-}
-
-const moscaSettings = {
-  // port: 1883,
-  backend: ascoltatore,
-  persistence: {
-    factory: mosca.persistence.Redis
-  }
-}
 
 // fired when the mqtt server is ready
 function setup() {
@@ -39,9 +22,23 @@ function createAWSLifecycleEvent ({ type, clientId, topics }) {
   return event
 }
 
-function createBroker (opts) {
-  opts = Object.assign({}, moscaSettings, opts)
-  const server = new mosca.Server(opts)
+/**
+ * https://github.com/aws/aws-sdk-js/blob/master/clients/iot.d.ts#L349
+ * 
+ * @param {Object} opts Module options
+ * @param {Object} moscaOpts Mosca options
+ */
+function createBroker (ascoltatore, moscaOpts) {
+  const moscaSettings = {
+    // port: 1883,
+    backend: ascoltatore,
+    persistence: {
+      factory: mosca.persistence.Redis
+    }
+  }
+
+  moscaOpts = Object.assign({}, moscaSettings, moscaOpts)
+  const server = new mosca.Server(moscaOpts)
   server.on('ready', setup)
 
   // fired when a message is received

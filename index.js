@@ -7,6 +7,7 @@ const AWS = require('aws-sdk-mock')
 AWS.setSDK(path.resolve('node_modules/aws-sdk'))
 const extend = require('xtend')
 const IP = require('ip')
+const redis = require('redis')
 const SQL = require('./sql')
 const evalInContext = require('./eval')
 const createMQTTBroker = require('./broker')
@@ -21,6 +22,15 @@ const defaultOpts = {
   httpPort: 1884,
   noStart: false,
   skipCacheInvalidation: false
+}
+
+const ascoltatoreOpts = {
+  type: 'redis',
+  redis,
+  host: 'localhost',
+  port: 6379,
+  db: 12,
+  return_buffers: true // to handle binary payloads
 }
 
 class ServerlessIotLocal {
@@ -98,7 +108,8 @@ class ServerlessIotLocal {
 
   _createMQTTBroker() {
     const { host, port, httpPort } = this.options
-    this.mqttBroker = createMQTTBroker({
+
+    const mosca = {
       host,
       port,
       http: {
@@ -106,7 +117,14 @@ class ServerlessIotLocal {
         port: httpPort,
         bundle: true
       }
-    })
+    }
+
+    // For now we'll only support redis backend.
+    const redisConfigOpts = this.options.redis;
+
+    const ascoltatore = _.merge({}, ascoltatoreOpts, redisConfigOpts)
+
+    this.mqttBroker = createMQTTBroker(ascoltatore, mosca)
 
     const endpointAddress = `${IP.address()}:${httpPort}`
 
@@ -123,9 +141,10 @@ class ServerlessIotLocal {
       this.mqttBroker.publish({ topic, payload }, callback)
     })
 
-    AWS.mock('Iot', 'describeEndpoint', callback => {
+    AWS.mock('Iot', 'describeEndpoint', (params, callback) => {
       process.nextTick(() => {
-        callback(null, { endpointAddress })
+        // Parameter params is optional.
+        (callback || params)(null, { endpointAddress })
       })
     })
 
