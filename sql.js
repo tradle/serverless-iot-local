@@ -61,7 +61,11 @@ const applySelect = ({ select, payload, context }) => {
     const { alias, field } = part
     const key = alias || field
     if (field === '*') {
-      alias ? event[key] = json : Object.assign(event, json);
+      if(alias) {
+        event[key] = json
+      } else {
+        Object.assign(event, json)
+      }
       continue
     }
 
