@@ -1,7 +1,7 @@
 const evalInContext = require('./eval')
 const BASE64_PLACEHOLDER = '*b64'
-const SQL_REGEX = /^SELECT (.*)\s+FROM\s+'([^']+)'\s*(?:WHERE\s(.*))?$/
-const SELECT_PART_REGEX = /^(.*?)(?: as (.*))?$/
+const SQL_REGEX = /^SELECT (.*)\s+FROM\s+'([^']+)'\s*(?:WHERE\s(.*))?$/i
+const SELECT_PART_REGEX = /^(.*?)(?: AS (.*))?$/i
 
 const parseSelect = sql => {
   // if (/\([^)]/.test(sql)) {
