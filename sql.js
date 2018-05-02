@@ -61,13 +61,8 @@ const applySelect = ({ select, payload, context }) => {
       const { alias, field } = part
       const key = alias || field
       if (field === '*') {
-        if (alias) {
-          event[key] = json
-          continue
-        } else {
-          Object.assign(event, json);
-          continue;
-        }
+        alias ? event[key] = json : Object.assign(event, json);
+        continue
       }
 
     const js = field.replace(BASE64_PLACEHOLDER, payloadReplacement)
