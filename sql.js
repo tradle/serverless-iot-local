@@ -57,13 +57,18 @@ const applySelect = ({ select, payload, context }) => {
     ? `new Buffer('${payload.toString('base64')}', 'base64')`
     : payload
 
-  for (const part of select) {
-    const { alias, field } = part
-    const key = alias || field
-    if (field === '*') {
-      event[key] = json
-      continue
-    }
+    for (const part of select) {
+      const { alias, field } = part
+      const key = alias || field
+      if (field === '*') {
+        if (alias) {
+          event[key] = json
+          continue
+        } else {
+          Object.assign(event, json);
+          continue;
+        }
+      }
 
     const js = field.replace(BASE64_PLACEHOLDER, payloadReplacement)
     event[key] = evalInContext(js, context)
