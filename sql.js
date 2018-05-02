@@ -61,7 +61,20 @@ const applySelect = ({ select, payload, context }) => {
     const { alias, field } = part
     const key = alias || field
     if (field === '*') {
-      event[key] = json
+      /* 
+       * If there is an alias for the wildcard selector, we want to include the fields in a nested key. 
+       * SELECT * as message, clientid() from 'topic'
+       * { message: { fieldOne: 'value', ...}}
+       *
+       * Otherwise, we want the fields flat in the resulting event object.
+       * SELECT *, clientid() from 'topic'
+       * { fieldOne: 'value', ...}
+       */
+      if(alias) {
+        event[key] = json
+      } else {
+        Object.assign(event, json)
+      }
       continue
     }
 
