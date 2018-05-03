@@ -26,12 +26,12 @@ describe('parseSelect', () => {
   })
 
   it('parses multiple SELECT properties correctly', () => {
-    const subject = "SELECT name, age, isMale AS gender FROM 'topic'"
+    const subject = "SELECT name, age, maleOrFemale AS gender FROM 'topic'"
     const results = parseSelect(subject)
     expect(results.select).toEqual([
       { field: 'name', alias: undefined},
       { field: 'age', alias: undefined },
-      { field: 'isMale', alias: 'gender'}
+      { field: 'maleOrFemale', alias: 'gender'}
     ])
   })
 })
