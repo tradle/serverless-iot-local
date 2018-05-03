@@ -6,6 +6,10 @@
   "repository": "https://github.com/tradle/serverless-iot-local",
   "author": "mvayngrib",
   "license": "MIT",
+  "scripts": {
+    "test": "jest",
+    "coverage": "jest --coverage"
+  },
   "dependencies": {
     "aws-sdk-mock": "^1.7.0",
     "ip": "^1.1.5",
@@ -18,5 +22,8 @@
   "peerDependencies": {
     "aws-sdk": "*",
     "serverless-offline": "*"
+  },
+  "devDependencies": {
+    "jest": "^22.4.3"
   }
 }
