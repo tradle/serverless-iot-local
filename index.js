@@ -252,7 +252,8 @@ class ServerlessIotLocal {
             payload: message,
             context: {
               topic: () => topic,
-              clientid: () => clientId
+              clientid: () => clientId,
+              principal: () => {}
             }
           })
 
