@@ -90,14 +90,14 @@ describe('applySelect', () => {
   describe('Function results are appeneded to output', () => {
     const select = [
       { field: '*', alias: 'message' },
-      { field: 'clientid()', alias: undefined }
+      { field: 'clientid()', alias: 'theClientId' }
     ]
     const clientIdFunc = jest.fn().mockReturnValue('12345')
     const payload = Buffer.from(JSON.stringify({name: 'Bob'}), 'utf8')
     const context = { clientid: clientIdFunc }
     const event = applySelect({ select, payload, context })
     expect(clientIdFunc).toHaveBeenCalledTimes(1)
-    expect(event).toEqual({ message: { name: 'Bob' }, 'clientid()': '12345' })
+    expect(event).toEqual({ message: { name: 'Bob' }, 'theClientId': '12345' })
   })
 
 })
