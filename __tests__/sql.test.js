@@ -29,7 +29,6 @@ test('parseSelect - parses where clause correctly', (t) => {
   t.end()
 })
 
-
 test('parseSelect - parses multiple SELECT properties correctly', (t) => {
   const subject = "SELECT name, age, maleOrFemale AS gender FROM 'topic'"
   const results = parseSelect(subject)
@@ -109,24 +108,3 @@ test('applySelect - Function results are appeneded to output', (t) => {
   t.deepEqual(event, { message: { name: 'Bob' }, 'theClientId': '12345' })
   t.end()
 })
-
-
-
-
-
-/*
-  describe('Function results are appeneded to output', () => {
-    const select = [
-      { field: '*', alias: 'message' },
-      { field: 'clientid()', alias: 'theClientId' }
-    ]
-    const clientIdFunc = jest.fn().mockReturnValue('12345')
-    const payload = Buffer.from(JSON.stringify({name: 'Bob'}), 'utf8')
-    const context = { clientid: clientIdFunc }
-    const event = applySelect({ select, payload, context })
-    expect(clientIdFunc).toHaveBeenCalledTimes(1)
-    expect(event).toEqual({ message: { name: 'Bob' }, 'theClientId': '12345' })
-  })
-
-})
-*/
