@@ -7,7 +7,8 @@
   "author": "mvayngrib",
   "license": "MIT",
   "scripts": {
-    "test": "tape '__tests__/**/*'"
+    "test": "tape '__tests__/**/*'",
+    "coverage": "istanbul cover tape tape '__tests__/**/*'"
   },
   "dependencies": {
     "aws-sdk-mock": "^1.7.0",
@@ -23,6 +24,7 @@
     "serverless-offline": "*"
   },
   "devDependencies": {
+    "istanbul": "^0.4.5",
     "sinon": "^5.0.3",
     "tape": "^4.9.0"
   }
