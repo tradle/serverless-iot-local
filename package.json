@@ -7,8 +7,7 @@
   "author": "mvayngrib",
   "license": "MIT",
   "scripts": {
-    "test": "jest",
-    "coverage": "jest --coverage"
+    "test": "tape '__tests__/**/*'"
   },
   "dependencies": {
     "aws-sdk-mock": "^1.7.0",
@@ -24,6 +23,7 @@
     "serverless-offline": "*"
   },
   "devDependencies": {
-    "jest": "^22.4.3"
+    "sinon": "^5.0.3",
+    "tape": "^4.9.0"
   }
 }
