@@ -214,9 +214,13 @@ class ServerlessIotLocal {
     const client = mqtt.connect(`ws://localhost:${httpPort}/mqqt`)
     client.on('error', console.error)
 
-    const connectMonitor = setInterval(() => {
-      this.log(`still haven't connected to local Iot broker!`)
-    }, 5000).unref()
+    let connectMonitor
+    const startMonitor = () => {
+      clearInterval(connectMonitor)
+      connectMonitor = setInterval(() => {
+        this.log(`still haven't connected to local Iot broker!`)
+      }, 5000).unref()
+    }
 
     client.on('connect', () => {
       clearInterval(connectMonitor)
@@ -225,6 +229,8 @@ class ServerlessIotLocal {
         client.subscribe(topicMatcher)
       }
     })
+
+    client.on('disconnect', startMonitor)
 
     client.on('message', (topic, message) => {
       const matches = Object.keys(topicsToFunctionsMap)
