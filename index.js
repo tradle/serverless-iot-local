@@ -93,7 +93,12 @@ class ServerlessIotLocal {
 
   startHandler() {
     this.originalEnvironment = _.extend({ IS_OFFLINE: true }, process.env)
-    this.options = _.merge({}, defaultOpts, (this.service.custom || {})['serverless-iot-local'], this.options)
+
+    const custom = this.service.custom || {}
+    const inheritedFromServerlessOffline = _.pick(custom['serverless-offline'] || {}, ['skipCacheInvalidation'])
+
+    this.options = _.merge({}, defaultOpts, custom['serverless-iot-local'], this.options)
+
     if (!this.options.noStart) {
       this._createMQTTBroker()
     }
