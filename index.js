@@ -227,6 +227,8 @@ class ServerlessIotLocal {
       }, 5000).unref()
     }
 
+    startMonitor()
+
     client.on('connect', () => {
       clearInterval(connectMonitor)
       this.log('connected to local Iot broker')
