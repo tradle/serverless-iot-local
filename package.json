@@ -14,7 +14,7 @@
     "aws-sdk-mock": "^1.7.0",
     "ip": "^1.1.5",
     "lodash": "^4.17.4",
-    "mosca": "^2.6.0",
+    "mosca": "mvayngrib/mosca",
     "mqtt": "^2.13.1",
     "mqtt-match": "^1.0.3",
     "redis": "^2.8.0"
