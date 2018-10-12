@@ -97,7 +97,13 @@ class ServerlessIotLocal {
     const custom = this.service.custom || {}
     const inheritedFromServerlessOffline = _.pick(custom['serverless-offline'] || {}, ['skipCacheInvalidation'])
 
-    this.options = _.merge({}, defaultOpts, custom['serverless-iot-local'], this.options)
+    this.options = _.merge(
+      {},
+      defaultOpts,
+      inheritedFromServerlessOffline,
+      custom['serverless-iot-local'],
+      this.options
+    )
 
     if (!this.options.noStart) {
       this._createMQTTBroker()
