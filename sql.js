@@ -3,10 +3,19 @@ const BASE64_PLACEHOLDER = '*b64'
 const SQL_REGEX = /^SELECT (.*)\s+FROM\s+'([^']+)'\s*(?:WHERE\s(.*))?$/i
 const SELECT_PART_REGEX = /^(.*?)(?: AS (.*))?$/i
 
-const parseSelect = sql => {
+const parseSelect = ({ sql, stackName }) => {
   // if (/\([^)]/.test(sql)) {
   //   throw new Error(`AWS Iot SQL functions in this sql are not yet supported: ${sql}`)
   // }
+
+  if (typeof sql === 'object') {
+    const sub = sql['Fn::Sub']
+    if (!sub) {
+      throw new Error('expected sql to be a string or have Fn::Sub')
+    }
+
+    sql = sub.replace(/\$\{AWS::StackName\}/g, stackName)
+  }
 
   const [select, topic, where] = sql.match(SQL_REGEX).slice(1)
   return {
@@ -61,8 +70,8 @@ const applySelect = ({ select, payload, context }) => {
     const { alias, field } = part
     const key = alias || field
     if (field === '*') {
-      /* 
-       * If there is an alias for the wildcard selector, we want to include the fields in a nested key. 
+      /*
+       * If there is an alias for the wildcard selector, we want to include the fields in a nested key.
        * SELECT * as message, clientid() from 'topic'
        * { message: { fieldOne: 'value', ...}}
        *

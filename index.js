@@ -39,7 +39,7 @@ class ServerlessIotLocal {
     this.log = serverless.cli.log.bind(serverless.cli)
     this.service = serverless.service
     this.options = options
-    this.provider = 'aws'
+    this.provider = this.serverless.getProvider('aws')
     this.mqttBroker = null
     this.requests = {}
 
@@ -177,6 +177,7 @@ class ServerlessIotLocal {
     const { port, httpPort, location } = this.options
     const topicsToFunctionsMap = {}
     const { runtime } = this.service.provider
+    const stackName = this.provider.naming.getStackName()
     Object.keys(this.service.functions).forEach(key => {
       const fun = this._getFunction(key)
       const funName = key
@@ -206,7 +207,11 @@ class ServerlessIotLocal {
         const { sql } = iot
         // hack
         // assumes SELECT ... topic() as topic
-        const parsed = SQL.parseSelect(sql)
+        const parsed = SQL.parseSelect({
+          sql,
+          stackName,
+        })
+
         const topicMatcher = parsed.topic
         if (!topicsToFunctionsMap[topicMatcher]) {
           topicsToFunctionsMap[topicMatcher] = []
