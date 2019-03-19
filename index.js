@@ -285,6 +285,8 @@ class ServerlessIotLocal {
           try {
             process.env = _.extend({}, this.service.provider.environment, this.service.functions[name].environment, this.originalEnvironment)
             process.env.SERVERLESS_OFFLINE_PORT = apiGWPort
+            process.env.AWS_LAMBDA_FUNCTION_NAME = this.service.service + '-' + this.service.provider.stage
+            process.env.AWS_REGION = this.service.provider.region
             handler = functionHelper.createHandler(options, this.options)
           } catch (err) {
             this.log(`Error while loading ${name}: ${err.stack}, ${requestId}`)
