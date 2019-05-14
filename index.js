@@ -44,7 +44,7 @@ class ServerlessIotLocal {
     this.log = serverless.cli.log.bind(serverless.cli)
     this.service = serverless.service
     this.options = options
-    this.provider = 'aws'
+    this.provider = this.serverless.getProvider('aws')
     this.mqttBroker = null
     this.requests = {}
 
@@ -111,7 +111,18 @@ class ServerlessIotLocal {
 
   startHandler() {
     this.originalEnvironment = _.extend({ IS_OFFLINE: true }, process.env)
-    this.options = _.merge({}, defaultOpts, (this.service.custom || {})['serverless-iot-local'], this.options)
+
+    const custom = this.service.custom || {}
+    const inheritedFromServerlessOffline = _.pick(custom['serverless-offline'] || {}, ['skipCacheInvalidation'])
+
+    this.options = _.merge(
+      {},
+      defaultOpts,
+      inheritedFromServerlessOffline,
+      custom['serverless-iot-local'],
+      this.options
+    )
+
     if (!this.options.noStart) {
       this._createMQTTBroker()
     }
@@ -210,6 +221,7 @@ class ServerlessIotLocal {
     const { port, httpPort, location } = this.options
     const topicsToFunctionsMap = {}
     const { runtime } = this.service.provider
+    const stackName = this.provider.naming.getStackName()
     Object.keys(this.service.functions).forEach(key => {
       const fun = this._getFunction(key)
       const funName = key
@@ -239,7 +251,11 @@ class ServerlessIotLocal {
         const { sql } = iot
         // hack
         // assumes SELECT ... topic() as topic
-        const parsed = SQL.parseSelect(sql)
+        const parsed = SQL.parseSelect({
+          sql,
+          stackName,
+        })
+
         const topicMatcher = parsed.topic
         if (!topicsToFunctionsMap[topicMatcher]) {
           topicsToFunctionsMap[topicMatcher] = []
@@ -258,9 +274,15 @@ class ServerlessIotLocal {
     const client = mqtt.connect(`ws://localhost:${httpPort}/mqqt`)
     client.on('error', console.error)
 
-    const connectMonitor = setInterval(() => {
-      this.log(`still haven't connected to local Iot broker!`)
-    }, 5000).unref()
+    let connectMonitor
+    const startMonitor = () => {
+      clearInterval(connectMonitor)
+      connectMonitor = setInterval(() => {
+        this.log(`still haven't connected to local Iot broker!`)
+      }, 5000).unref()
+    }
+
+    startMonitor()
 
     client.on('connect', () => {
       clearInterval(connectMonitor)
@@ -269,6 +291,8 @@ class ServerlessIotLocal {
         client.subscribe(topicMatcher)
       }
     })
+
+    client.on('disconnect', startMonitor)
 
     client.on('message', (topic, message) => {
       const matches = Object.keys(topicsToFunctionsMap)
@@ -296,7 +320,8 @@ class ServerlessIotLocal {
             payload: message,
             context: {
               topic: () => topic,
-              clientid: () => clientId
+              clientid: () => clientId,
+              principal: () => {}
             }
           })
 
@@ -304,6 +329,8 @@ class ServerlessIotLocal {
           try {
             process.env = _.extend({}, this.service.provider.environment, this.service.functions[name].environment, this.originalEnvironment)
             process.env.SERVERLESS_OFFLINE_PORT = apiGWPort
+            process.env.AWS_LAMBDA_FUNCTION_NAME = this.service.service + '-' + this.service.provider.stage
+            process.env.AWS_REGION = this.service.provider.region
             handler = functionHelper.createHandler(options, this.options)
           } catch (err) {
             this.log(`Error while loading ${name}: ${err.stack}, ${requestId}`)
