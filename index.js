@@ -7,6 +7,7 @@ const AWS = require('aws-sdk-mock')
 AWS.setSDK(path.resolve('node_modules/aws-sdk'))
 const extend = require('xtend')
 const IP = require('ip')
+const redis = require('redis')
 const SQL = require('./sql')
 const evalInContext = require('./eval')
 const createMQTTBroker = require('./broker')
@@ -23,13 +24,22 @@ const defaultOpts = {
   skipCacheInvalidation: false
 }
 
+const ascoltatoreOpts = {
+  type: 'redis',
+  redis,
+  host: 'localhost',
+  port: 6379,
+  db: 12,
+  return_buffers: true // to handle binary payloads
+}
+
 class ServerlessIotLocal {
   constructor(serverless, options) {
     this.serverless = serverless
     this.log = serverless.cli.log.bind(serverless.cli)
     this.service = serverless.service
     this.options = options
-    this.provider = 'aws'
+    this.provider = this.serverless.getProvider('aws')
     this.mqttBroker = null
     this.requests = {}
 
@@ -83,7 +93,18 @@ class ServerlessIotLocal {
 
   startHandler() {
     this.originalEnvironment = _.extend({ IS_OFFLINE: true }, process.env)
-    this.options = _.merge({}, defaultOpts, (this.service.custom || {})['serverless-iot-local'], this.options)
+
+    const custom = this.service.custom || {}
+    const inheritedFromServerlessOffline = _.pick(custom['serverless-offline'] || {}, ['skipCacheInvalidation'])
+
+    this.options = _.merge(
+      {},
+      defaultOpts,
+      inheritedFromServerlessOffline,
+      custom['serverless-iot-local'],
+      this.options
+    )
+
     if (!this.options.noStart) {
       this._createMQTTBroker()
     }
@@ -98,7 +119,8 @@ class ServerlessIotLocal {
 
   _createMQTTBroker() {
     const { host, port, httpPort } = this.options
-    this.mqttBroker = createMQTTBroker({
+
+    const mosca = {
       host,
       port,
       http: {
@@ -106,7 +128,14 @@ class ServerlessIotLocal {
         port: httpPort,
         bundle: true
       }
-    })
+    }
+
+    // For now we'll only support redis backend.
+    const redisConfigOpts = this.options.redis;
+
+    const ascoltatore = _.merge({}, ascoltatoreOpts, redisConfigOpts)
+
+    this.mqttBroker = createMQTTBroker(ascoltatore, mosca)
 
     const endpointAddress = `${IP.address()}:${httpPort}`
 
@@ -125,7 +154,8 @@ class ServerlessIotLocal {
 
     AWS.mock('Iot', 'describeEndpoint', (params, callback) => {
       process.nextTick(() => {
-        callback(null, { endpointAddress })
+        // Parameter params is optional.
+        (callback || params)(null, { endpointAddress })
       })
     })
 
@@ -176,6 +206,7 @@ class ServerlessIotLocal {
     const { port, httpPort, location } = this.options
     const topicsToFunctionsMap = {}
     const { runtime } = this.service.provider
+    const stackName = this.provider.naming.getStackName()
     Object.keys(this.service.functions).forEach(key => {
       const fun = this._getFunction(key)
       const funName = key
@@ -205,7 +236,11 @@ class ServerlessIotLocal {
         const { sql } = iot
         // hack
         // assumes SELECT ... topic() as topic
-        const parsed = SQL.parseSelect(sql)
+        const parsed = SQL.parseSelect({
+          sql,
+          stackName,
+        })
+
         const topicMatcher = parsed.topic
         if (!topicsToFunctionsMap[topicMatcher]) {
           topicsToFunctionsMap[topicMatcher] = []
@@ -223,12 +258,26 @@ class ServerlessIotLocal {
 
     const client = mqtt.connect(`ws://localhost:${httpPort}/mqqt`)
     client.on('error', console.error)
+
+    let connectMonitor
+    const startMonitor = () => {
+      clearInterval(connectMonitor)
+      connectMonitor = setInterval(() => {
+        this.log(`still haven't connected to local Iot broker!`)
+      }, 5000).unref()
+    }
+
+    startMonitor()
+
     client.on('connect', () => {
+      clearInterval(connectMonitor)
       this.log('connected to local Iot broker')
       for (let topicMatcher in topicsToFunctionsMap) {
         client.subscribe(topicMatcher)
       }
     })
+
+    client.on('disconnect', startMonitor)
 
     client.on('message', (topic, message) => {
       const matches = Object.keys(topicsToFunctionsMap)
@@ -256,7 +305,8 @@ class ServerlessIotLocal {
             payload: message,
             context: {
               topic: () => topic,
-              clientid: () => clientId
+              clientid: () => clientId,
+              principal: () => {}
             }
           })
 
@@ -264,6 +314,8 @@ class ServerlessIotLocal {
           try {
             process.env = _.extend({}, this.service.provider.environment, this.service.functions[name].environment, this.originalEnvironment)
             process.env.SERVERLESS_OFFLINE_PORT = apiGWPort
+            process.env.AWS_LAMBDA_FUNCTION_NAME = this.service.service + '-' + this.service.provider.stage
+            process.env.AWS_REGION = this.service.provider.region
             handler = functionHelper.createHandler(options, this.options)
           } catch (err) {
             this.log(`Error while loading ${name}: ${err.stack}, ${requestId}`)
