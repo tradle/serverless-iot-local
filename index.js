@@ -45,9 +45,13 @@ class ServerlessIotLocal {
 
     try {
         createLambdaContext  = require('serverless-offline/src/createLambdaContext');
-    } catch(e) {
-        // latest serverless-offline changed the file name
-        createLambdaContext = require('serverless-offline/src/LambdaContext');
+    } catch (e) {
+        try {
+            // latest serverless-offline changed the file name
+            createLambdaContext = require('serverless-offline/src/LambdaContext');
+        } catch (e2) {
+            throw new Error('Unable to find LambdaContext file');
+        }
     }
 
     this.commands = {
