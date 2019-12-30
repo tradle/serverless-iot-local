@@ -238,7 +238,7 @@ class ServerlessIotLocal {
       const fun = this._getFunction(key)
       const funName = key
       const servicePath = path.join(this.serverless.config.servicePath, location)
-      const funOptions = functionHelper.getFunctionOptions(fun, key, servicePath)
+      const funOptions = functionHelper.getFunctionOptions(fun, key, servicePath, runtime)
       this.debug(`funOptions ${JSON.stringify(funOptions, null, 2)} `)
 
       if (!fun.environment) {
