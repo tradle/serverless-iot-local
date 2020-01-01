@@ -13,18 +13,7 @@ const evalInContext = require('./eval')
 const createMQTTBroker = require('./broker')
 // TODO: send PR to serverless-offline to export this
 const functionHelper = require('serverless-offline/src/functionHelper')
-let createLambdaContext;
-
-try {
-    createLambdaContext  = require('serverless-offline/src/createLambdaContext');
-} catch (e) {
-    try {
-        // latest serverless-offline changed the file name
-        createLambdaContext = require('serverless-offline/src/LambdaContext');
-    } catch (e2) {
-        throw new Error('Unable to find LambdaContext file');
-    }
-}
+const LambdaContext = require('serverless-offline/src/LambdaContext');
 
 const VERBOSE = typeof process.env.SLS_DEBUG !== 'undefined'
 const defaultOpts = {
@@ -349,7 +338,7 @@ class ServerlessIotLocal {
             return
           }
 
-          const lambdaContext = createLambdaContext(fn)
+          const lambdaContext = new LambdaContext(fn, {})
           try {
             handler(event, lambdaContext, lambdaContext.done)
           } catch (error) {
