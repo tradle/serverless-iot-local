@@ -51,6 +51,9 @@ custom:
       host: 'localhost'
       port: 6379
       db: 12
+    endpointAddressSSL: true
+    keyPath: contrib/secure/tls-key.pem
+    certPath: contrib/secure/tls-cert.pem
 ```
 
 ### Using with serverless-offline plugin
@@ -62,6 +65,14 @@ plugins:
   - serverless-iot-local
   - serverless-offline
 ```
+
+### Setting up a Self Signed Certificate
+
+When using with the AWS IoT Device SDK create a self-signed certificate using OpenSSL.
+
+```$ openssl genrsa -out tls-key.pem 2048
+$ openssl req -new -sha256 -key tls-key.pem -out my-csr.pem
+$ openssl x509 -req -in my-csr.pem -signkey tls-key.pem -out tls-cert.pem```
 
 ## Todo
 
