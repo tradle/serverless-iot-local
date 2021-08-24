@@ -1,8 +1,11 @@
-const mosca = require('mosca')
+const Aedes = require('aedes')
+const { createServer } = require('aedes-server-factory')
+const aedesPersistenceRedis = require('aedes-persistence-redis')
+const mqEmitterRedis = require('mqemitter-redis')
 
 // fired when the mqtt server is ready
 function setup() {
-  console.log('Mosca server is up and running')
+  console.log('Aedes server is up and running')
 }
 
 function createAWSLifecycleEvent ({ type, clientId, topics }) {
@@ -26,52 +29,57 @@ function createAWSLifecycleEvent ({ type, clientId, topics }) {
  * https://github.com/aws/aws-sdk-js/blob/master/clients/iot.d.ts#L349
  * 
  * @param {Object} opts Module options
- * @param {Object} moscaOpts Mosca options
+ * @param {Object} aedesOpts Aedes options
  */
-function createBroker (ascoltatore, moscaOpts) {
-  const moscaSettings = {
-    // port: 1883,
-    backend: ascoltatore,
+function createMQTTBroker ({ host, port, httpPort, redisOpts }) {
+  const aedes = new Aedes({
+    mq: mqEmitterRedis(redisOpts),
     persistence: {
-      factory: mosca.persistence.Redis
-    }
-  }
+      factory: aedesPersistenceRedis(redisOpts)
+    },
+    ...aedesOpts
+  })
+  aedes.on('ready', setup)
+  aedes.on('client', client => publishClient('connected', client.id))
+  aedes.on('clientDisconnect', client => publishClient('disconnected', client.id))
+  aedes.on('subscribe', (subscriptions, client) => publishSubscription('subscribed', client.id, subscriptions))
+  aedes.on('unsubscribe', (subscriptions, client) => publishSubscription('unsubscribed', client.id, subscriptions))
 
-  moscaOpts = Object.assign({}, moscaSettings, moscaOpts)
-  const server = new mosca.Server(moscaOpts)
-  server.on('ready', setup)
-
-  // fired when a message is received
-  server.on('published', function (packet, client) {
-    const presence = packet.topic.match(/^\$SYS\/.*\/(new|disconnect)\/clients$/)
-    if (presence) {
-      const clientId = packet.payload
-      const type = presence[1] === 'new' ? 'connected' : 'disconnected'
-      server.publish({
-        topic: `$aws/events/presence/${type}/${clientId}`,
-        payload: JSON.stringify(createAWSLifecycleEvent({
-          type,
-          clientId
-        }))
-      })
-    }
-
-    const subscription = packet.topic.match(/^\$SYS\/.*\/new\/(subscribes|unsubscribes)$/)
-    if (subscription) {
-      const type = subscription[1] === 'subscribes' ? 'subscribed' : 'unsubscribed'
-      const { clientId, topic } = JSON.parse(packet.payload)
-      server.publish({
-        topic: `$aws/events/subscriptions/${type}/${clientId}`,
-        payload: JSON.stringify(createAWSLifecycleEvent({
-          type,
-          clientId,
-          topics: [topic]
-        }))
-      })
+  const server = createServer({
+    aedes,
+    ws: true,
+    tcp: {
+      host,
+      port
+    },
+    http: {
+      host,
+      port: httpPort
     }
   })
 
-  return server
+  return { aedes, server }
+
+  function publishClient (type, clientId) {
+    aedes.publish({
+      topic: `$aws/events/presence/${type}/${clientId}`,
+      payload: JSON.stringify(createAWSLifecycleEvent({
+        type,
+        clientId
+      }))
+    })
+  }
+
+  function publishSubscription (type, clientId, subscriptions) {
+    aedes.publish({
+      topic: `$aws/events/subscriptions/${type}/${clientId}`,
+      payload: JSON.stringify(createAWSLifecycleEvent({
+        type,
+        clientId,
+        topics: subscriptions
+      }))
+    })
+  }
 }
 
-module.exports = createBroker
+module.exports = createMQTTBroker

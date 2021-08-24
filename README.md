@@ -1,6 +1,6 @@
 # serverless-iot-local
 
-AWS Iot lifecycle and regular topic subscription events
+AWS Iot lifecycle and regular topic subscription events.
 
 ## Prerequisites
 * serverless@1.x
@@ -18,15 +18,15 @@ plugins:
 ```
 
 ## Usage
-1. Start redis:  
+1. Start redis:
     `redis-server`
 
 2. If you're using [serverless-offline](https://github.com/dherault/serverless-offline), you can run:  
 
     `sls offline start`
 
-    Otherwise run: 
-    
+    Otherwise run:
+
     `sls iot start`
 
 CLI options are optional:
@@ -34,7 +34,7 @@ CLI options are optional:
 ```
 --port                -p  Port to listen on. Default: 1883
 --httpPort            -h  Port for WebSocket connections. Default: 1884
---noStart             -n  Prevent Iot broker (Mosca MQTT brorker) from being started (if you already have one)
+--noStart             -n  Prevent Iot broker (Aedes MQTT broker) from being started (if you already have one)
 --skipCacheValidation -c  Tells the plugin to skip require cache invalidation. A script reloading tool like Nodemon might then be needed (same as serverless-offline)
 ```
 

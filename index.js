@@ -5,11 +5,8 @@ const mqttMatch = require('mqtt-match')
 const realAWS = require('aws-sdk')
 const AWS = require('aws-sdk-mock')
 AWS.setSDK(path.resolve('node_modules/aws-sdk'))
-const extend = require('xtend')
 const IP = require('ip')
-const redis = require('redis')
 const SQL = require('./sql')
-const evalInContext = require('./eval')
 const createMQTTBroker = require('./broker')
 // TODO: send PR to serverless-offline to export this
 const functionHelper = require('serverless-offline/src/functionHelper')
@@ -21,16 +18,14 @@ const defaultOpts = {
   port: 1883,
   httpPort: 1884,
   noStart: false,
-  skipCacheInvalidation: false
-}
-
-const ascoltatoreOpts = {
-  type: 'redis',
-  redis,
-  host: 'localhost',
-  port: 6379,
-  db: 12,
-  return_buffers: true // to handle binary payloads
+  skipCacheInvalidation: false,
+  redis: {
+    port: 6379,          // Redis port
+    host: 'localhost',   // Redis host
+    family: 4,           // 4 (IPv4) or 6 (IPv6)
+    db: 12,
+    maxSessionDelivery: 100 // maximum offline messages deliverable on client CONNECT, default is 1000
+  }
 }
 
 class ServerlessIotLocal {
@@ -114,30 +109,13 @@ class ServerlessIotLocal {
 
   endHandler() {
     this.log('Stopping Iot broker')
-    this.mqttBroker.close()
+    this.mqttBroker.server.close()
   }
 
   _createMQTTBroker() {
-    const { host, port, httpPort } = this.options
+    this.mqttBroker = createMQTTBroker(this.options)
 
-    const mosca = {
-      host,
-      port,
-      http: {
-        host,
-        port: httpPort,
-        bundle: true
-      }
-    }
-
-    // For now we'll only support redis backend.
-    const redisConfigOpts = this.options.redis;
-
-    const ascoltatore = _.merge({}, ascoltatoreOpts, redisConfigOpts)
-
-    this.mqttBroker = createMQTTBroker(ascoltatore, mosca)
-
-    const endpointAddress = `${IP.address()}:${httpPort}`
+    const endpointAddress = `${isLocalHost(this.options.host) ? IP.address() : this.options.host}:${httpPort}`
 
     // prime AWS IotData import
     // this is necessary for below mock to work
@@ -149,7 +127,7 @@ class ServerlessIotLocal {
 
     AWS.mock('IotData', 'publish', (params, callback) => {
       const { topic, payload } = params
-      this.mqttBroker.publish({ topic, payload }, callback)
+      this.mqttBroker.aeges.publish({ topic, payload }, callback)
     })
 
     AWS.mock('Iot', 'describeEndpoint', (params, callback) => {
@@ -312,6 +290,10 @@ class ServerlessIotLocal {
 
     return fun
   }
+}
+
+function isLocalHost (host) {
+  return host === '0.0.0.0' || host === '127.0.0.1' || host === 'localhost'
 }
 
 module.exports = ServerlessIotLocal

@@ -11,17 +11,19 @@
     "coverage": "istanbul cover tape tape '__tests__/**/*'"
   },
   "dependencies": {
+    "aedes": "^0.46.1",
+    "aedes-persistence-redis": "^8.0.1",
+    "aedes-server-factory": "^0.2.1",
     "aws-sdk-mock": "^1.7.0",
     "ip": "^1.1.5",
     "lodash": "^4.17.4",
-    "mosca": "^2.6.0",
+    "mqemitter-redis": "^4.1.0",
     "mqtt": "^2.13.1",
-    "mqtt-match": "^1.0.3",
-    "redis": "^2.8.0"
+    "mqtt-match": "^1.0.3"
   },
   "peerDependencies": {
     "aws-sdk": "*",
-    "serverless-offline": "*"
+    "serverless-offline": "github:tradle/serverless-offline"
   },
   "devDependencies": {
     "istanbul": "^0.4.5",

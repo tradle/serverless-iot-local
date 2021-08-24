@@ -11,12 +11,4 @@ const evalInContext = (js, context) => {
   }
 }
 
-const encode = (data, encoding) => {
-  if (encoding !== 'base64') {
-    throw new Error('AWS Iot SQL encode() function only supports base64 as an encoding')
-  }
-
-  return data.toString(encoding)
-}
-
 module.exports = evalInContext

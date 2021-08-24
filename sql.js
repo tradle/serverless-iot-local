@@ -3,7 +3,11 @@ const BASE64_PLACEHOLDER = '*b64'
 const SQL_REGEX = /^SELECT (.*)\s+FROM\s+'([^']+)'\s*(?:WHERE\s(.*))?$/i
 const SELECT_PART_REGEX = /^(.*?)(?: AS (.*))?$/i
 
-const parseSelect = ({ sql, stackName }) => {
+const parseSelect = (options) => {
+  if (typeof options === 'string') {
+    options = { sql: options }
+  }
+  const { sql, stackName } = options
   // if (/\([^)]/.test(sql)) {
   //   throw new Error(`AWS Iot SQL functions in this sql are not yet supported: ${sql}`)
   // }
@@ -38,9 +42,9 @@ const parseSelectPart = part => {
   }
 }
 
-const brace = new Buffer('{')[0]
-const bracket = new Buffer('[')[0]
-const doubleQuote = new Buffer('"')[0]
+const brace = Buffer.from('{')[0]
+const bracket = Buffer.from('[')[0]
+const doubleQuote = Buffer.from('"')[0]
 // to avoid stopping here when Stop on Caught Exceptions is on
 const maybeParseJSON = val => {
   switch (val[0]) {
@@ -63,7 +67,7 @@ const applySelect = ({ select, payload, context }) => {
   }
 
   const payloadReplacement = Buffer.isBuffer(payload)
-    ? `new Buffer('${payload.toString('base64')}', 'base64')`
+    ? `Buffer.from('${payload.toString('base64')}', 'base64')`
     : payload
 
   for (const part of select) {
