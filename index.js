@@ -9,8 +9,8 @@ const IP = require('ip')
 const SQL = require('./sql')
 const createMQTTBroker = require('./broker')
 // TODO: send PR to serverless-offline to export this
-const functionHelper = require('serverless-offline/src/functionHelper')
-const createLambdaContext = require('serverless-offline/src/createLambdaContext')
+const functionHelper = require('@tradle/serverless-offline/src/functionHelper')
+const createLambdaContext = require('@tradle/serverless-offline/src/createLambdaContext')
 const VERBOSE = typeof process.env.SLS_DEBUG !== 'undefined'
 const defaultOpts = {
   host: 'localhost',
