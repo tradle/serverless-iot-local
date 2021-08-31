@@ -109,13 +109,21 @@ class ServerlessIotLocal {
 
   endHandler() {
     this.log('Stopping Iot broker')
-    this.mqttBroker.server.close()
+    this.mqttBroker.tcp.close(() => {
+      this.mqttBroker.http.close(() => {
+        this.mqttBroker.aedes.close(() => {
+          this.mqttBroker.persistence.destroy()
+          this.mqttBroker.mq.close()
+        })
+      })
+    })
+    this._client.end()
   }
 
   _createMQTTBroker() {
-    this.mqttBroker = createMQTTBroker(this.options)
+    this.mqttBroker = createMQTTBroker(this.options, (...args) => this.debug(...args))
 
-    const endpointAddress = `${isLocalHost(this.options.host) ? IP.address() : this.options.host}:${httpPort}`
+    const endpointAddress = `${isLocalHost(this.options.host) ? IP.address() : this.options.host}:${this.options.httpPort}`
 
     // prime AWS IotData import
     // this is necessary for below mock to work
@@ -136,8 +144,6 @@ class ServerlessIotLocal {
         (callback || params)(null, { endpointAddress })
       })
     })
-
-    this.log(`Iot broker listening on ports: ${port} (mqtt) and ${httpPort} (http)`)
   }
 
   _getServerlessOfflinePort() {
@@ -152,7 +158,7 @@ class ServerlessIotLocal {
   }
 
   _createMQTTClient() {
-    const { port, httpPort, location } = this.options
+    const { host, httpPort, location } = this.options
     const topicsToFunctionsMap = {}
     const { runtime } = this.service.provider
     const stackName = this.provider.naming.getStackName()
@@ -205,14 +211,17 @@ class ServerlessIotLocal {
       })
     })
 
-    const client = mqtt.connect(`ws://localhost:${httpPort}/mqqt`)
+    const url = `ws://${host}:${httpPort}/mqqt`
+    const client = mqtt.connect(url)
+    this.log(`connecting to local Iot broker! at ${url}`)
+    this._client = client
     client.on('error', console.error)
 
     let connectMonitor
     const startMonitor = () => {
       clearInterval(connectMonitor)
       connectMonitor = setInterval(() => {
-        this.log(`still haven't connected to local Iot broker!`)
+        this.log(`still haven't connected to local Iot broker! ${url}`)
       }, 5000).unref()
     }
 
@@ -226,6 +235,9 @@ class ServerlessIotLocal {
       }
     })
 
+    client.on('end', () => {
+      clearInterval(connectMonitor)
+    })
     client.on('disconnect', startMonitor)
 
     client.on('message', (topic, message) => {

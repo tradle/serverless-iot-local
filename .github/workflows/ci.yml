@@ -1,0 +1,24 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      NODE_NO_WARNINGS: 1
+    services:
+      redis: 
+        image: tradle/redis
+        ports:
+          - "6379:6379"
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 14.17.3
+    - name: Installing dependencies
+      run: |
+        npm i
+    - name: Running unit tests
+      run: npm run test

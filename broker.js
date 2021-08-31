@@ -3,11 +3,6 @@ const { createServer } = require('aedes-server-factory')
 const aedesPersistenceRedis = require('aedes-persistence-redis')
 const mqEmitterRedis = require('mqemitter-redis')
 
-// fired when the mqtt server is ready
-function setup() {
-  console.log('Aedes server is up and running')
-}
-
 function createAWSLifecycleEvent ({ type, clientId, topics }) {
   // http://docs.aws.amazon.com/iot/latest/developerguide/life-cycle-events.html#subscribe-unsubscribe-events
   const event = {
@@ -31,36 +26,34 @@ function createAWSLifecycleEvent ({ type, clientId, topics }) {
  * @param {Object} opts Module options
  * @param {Object} aedesOpts Aedes options
  */
-function createMQTTBroker ({ host, port, httpPort, redisOpts }) {
-  const aedes = new Aedes({
-    mq: mqEmitterRedis(redisOpts),
-    persistence: {
-      factory: aedesPersistenceRedis(redisOpts)
-    },
-    ...aedesOpts
-  })
-  aedes.on('ready', setup)
+function createMQTTBroker ({ host, port, httpPort, redis }, debug) {
+  const persistence = aedesPersistenceRedis(redis)
+  const mq = mqEmitterRedis(redis)
+  const aedes = new Aedes({ mq, persistence })
+  aedes.on('ready', () => debug('Aedes server is up and running'))
   aedes.on('client', client => publishClient('connected', client.id))
   aedes.on('clientDisconnect', client => publishClient('disconnected', client.id))
   aedes.on('subscribe', (subscriptions, client) => publishSubscription('subscribed', client.id, subscriptions))
   aedes.on('unsubscribe', (subscriptions, client) => publishSubscription('unsubscribed', client.id, subscriptions))
 
-  const server = createServer({
-    aedes,
-    ws: true,
-    tcp: {
-      host,
-      port
-    },
-    http: {
-      host,
-      port: httpPort
-    }
+  const tcp = createServer(aedes)
+  const http = createServer(aedes, {
+    ws: true
   })
 
-  return { aedes, server }
+  debug(`Listening to Aedes tcp at ${host}:${port}`)
+  tcp.listen(port, () => {
+    debug(`Aedes tcp is up and running at ${host}:${port}`)
+  })
+  debug(`Listening to Aedes http at ${host}:${httpPort}`)
+  http.listen(httpPort, () => {
+    debug(`Aedes http is up and running at ${host}:${httpPort}`)
+  })
+
+  return { aedes, tcp, http, persistence, mq }
 
   function publishClient (type, clientId) {
+    debug(`Publishing client ${type}/${clientId}`)
     aedes.publish({
       topic: `$aws/events/presence/${type}/${clientId}`,
       payload: JSON.stringify(createAWSLifecycleEvent({
@@ -71,6 +64,7 @@ function createMQTTBroker ({ host, port, httpPort, redisOpts }) {
   }
 
   function publishSubscription (type, clientId, subscriptions) {
+    debug(`Publishing subscription ${type}/${clientId}`)
     aedes.publish({
       topic: `$aws/events/subscriptions/${type}/${clientId}`,
       payload: JSON.stringify(createAWSLifecycleEvent({

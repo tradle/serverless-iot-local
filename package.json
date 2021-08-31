@@ -22,12 +22,17 @@
     "mqtt-match": "^1.0.3"
   },
   "peerDependencies": {
-    "aws-sdk": "*",
-    "@tradle/serverless-offline": "^3.16.0"
+    "@tradle/serverless-offline": "^3.16.0",
+    "aws-sdk": "*"
   },
   "devDependencies": {
+    "@tradle/serverless-offline": "^3.16.0",
+    "aws-iot-device-sdk": "github:mvayngrib/aws-iot-device-sdk-js",
+    "aws-sdk": "^2.631.0",
+    "debug": "^3.2.7",
     "istanbul": "^0.4.5",
+    "pify": "^5.0.0",
     "sinon": "^5.0.3",
-    "tape": "^4.9.0"
+    "tape": "^5.3.1"
   }
 }
