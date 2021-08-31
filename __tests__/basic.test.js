@@ -26,7 +26,7 @@ const serverless = {
     functions: {},
     getFunction (key) {}
   },
-  
+
   getProvider (_name /* aws */) {
     return {
       naming: {
@@ -56,7 +56,7 @@ function createClient () {
 test('Basic server test', async t => {
   const inst = new ServerlessIoTLocal(serverless, {
     redis: {
-      host: process.env.REDIS_HOST || process.env.TRADLE_LOCAL_IP ,
+      host: process.env.REDIS_HOST || process.env.TRADLE_LOCAL_IP,
       port: process.env.REDIS_PORT
     }
   })
@@ -74,12 +74,12 @@ test('Basic server test', async t => {
   })
   t.pass('publishing message')
   const payload = randomBytes(6).toString('hex')
-  const [_, data] = await Promise.all([
+  const [, data] = await Promise.all([
     client1.publish('test', payload, { qos: 1 }).then(() => t.pass('data sent')),
     receive
   ])
   t.equals(data, payload, `expected test data "${payload}" received`)
-  
+
   await Promise.all([
     client2.end(),
     client1.end()

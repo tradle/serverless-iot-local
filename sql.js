@@ -7,7 +7,7 @@ const parseSelect = (options) => {
   if (typeof options === 'string') {
     options = { sql: options }
   }
-  const { sql, stackName } = options
+  let { sql, stackName } = options
   // if (/\([^)]/.test(sql)) {
   //   throw new Error(`AWS Iot SQL functions in this sql are not yet supported: ${sql}`)
   // }
@@ -48,12 +48,12 @@ const doubleQuote = Buffer.from('"')[0]
 // to avoid stopping here when Stop on Caught Exceptions is on
 const maybeParseJSON = val => {
   switch (val[0]) {
-  case brace:
-  case bracket:
-  case doubleQuote:
-    try {
-      return JSON.parse(val)
-    } catch (err) {}
+    case brace:
+    case bracket:
+    case doubleQuote:
+      try {
+        return JSON.parse(val)
+      } catch (err) {}
   }
 
   return val
@@ -83,7 +83,7 @@ const applySelect = ({ select, payload, context }) => {
        * SELECT *, clientid() from 'topic'
        * { fieldOne: 'value', ...}
        */
-      if(alias) {
+      if (alias) {
         event[key] = json
       } else {
         Object.assign(event, json)
@@ -100,6 +100,6 @@ const applySelect = ({ select, payload, context }) => {
 
 module.exports = {
   parseSelect,
-  applySelect,
+  applySelect
   // parseWhere
 }

@@ -20,16 +20,16 @@ const defaultOpts = {
   noStart: false,
   skipCacheInvalidation: false,
   redis: {
-    port: 6379,          // Redis port
-    host: 'localhost',   // Redis host
-    family: 4,           // 4 (IPv4) or 6 (IPv6)
+    port: 6379, // Redis port
+    host: 'localhost', // Redis host
+    family: 4, // 4 (IPv4) or 6 (IPv6)
     db: 12,
     maxSessionDelivery: 100 // maximum offline messages deliverable on client CONNECT, default is 1000
   }
 }
 
 class ServerlessIotLocal {
-  constructor(serverless, options) {
+  constructor (serverless, options) {
     this.serverless = serverless
     this.log = serverless.cli.log.bind(serverless.cli)
     this.service = serverless.service
@@ -60,12 +60,12 @@ class ServerlessIotLocal {
               },
               noStart: {
                 shortcut: 'n',
-                usage: 'Do not start local MQTT broker (in case it is already running)',
+                usage: 'Do not start local MQTT broker (in case it is already running)'
               },
               skipCacheInvalidation: {
                 usage: 'Tells the plugin to skip require cache invalidation. A script reloading tool like Nodemon might then be needed',
-                shortcut: 'c',
-              },
+                shortcut: 'c'
+              }
             }
           }
         }
@@ -76,17 +76,17 @@ class ServerlessIotLocal {
       'iot:start:startHandler': this.startHandler.bind(this),
       'before:offline:start:init': this.startHandler.bind(this),
       'before:offline:start': this.startHandler.bind(this),
-      'before:offline:start:end': this.endHandler.bind(this),
+      'before:offline:start:end': this.endHandler.bind(this)
     }
   }
 
-  debug() {
+  debug () {
     if (VERBOSE) {
       this.log.apply(this, arguments)
     }
   }
 
-  startHandler() {
+  startHandler () {
     this.originalEnvironment = _.extend({ IS_OFFLINE: true }, process.env)
 
     const custom = this.service.custom || {}
@@ -107,7 +107,7 @@ class ServerlessIotLocal {
     this._createMQTTClient()
   }
 
-  endHandler() {
+  endHandler () {
     this.log('Stopping Iot broker')
     this.mqttBroker.tcp.close(() => {
       this.mqttBroker.http.close(() => {
@@ -120,7 +120,7 @@ class ServerlessIotLocal {
     this._client.end()
   }
 
-  _createMQTTBroker() {
+  _createMQTTBroker () {
     this.mqttBroker = createMQTTBroker(this.options, (...args) => this.debug(...args))
 
     const endpointAddress = `${isLocalHost(this.options.host) ? IP.address() : this.options.host}:${this.options.httpPort}`
@@ -146,7 +146,7 @@ class ServerlessIotLocal {
     })
   }
 
-  _getServerlessOfflinePort() {
+  _getServerlessOfflinePort () {
     // hackeroni!
     const offline = this.serverless.pluginManager.plugins.find(
       plugin => plugin.commands && plugin.commands.offline
@@ -157,7 +157,7 @@ class ServerlessIotLocal {
     }
   }
 
-  _createMQTTClient() {
+  _createMQTTClient () {
     const { host, httpPort, location } = this.options
     const topicsToFunctionsMap = {}
     const { runtime } = this.service.provider
@@ -193,7 +193,7 @@ class ServerlessIotLocal {
         // assumes SELECT ... topic() as topic
         const parsed = SQL.parseSelect({
           sql,
-          stackName,
+          stackName
         })
 
         const topicMatcher = parsed.topic
@@ -230,7 +230,7 @@ class ServerlessIotLocal {
     client.on('connect', () => {
       clearInterval(connectMonitor)
       this.log('connected to local Iot broker')
-      for (let topicMatcher in topicsToFunctionsMap) {
+      for (const topicMatcher in topicsToFunctionsMap) {
         client.subscribe(topicMatcher)
       }
     })
@@ -255,7 +255,7 @@ class ServerlessIotLocal {
 
       const apiGWPort = this._getServerlessOfflinePort()
       matches.forEach(topicMatcher => {
-        let functions = topicsToFunctionsMap[topicMatcher]
+        const functions = topicsToFunctionsMap[topicMatcher]
         functions.forEach(fnInfo => {
           const { fn, name, options, select } = fnInfo
           const requestId = Math.random().toString().slice(2)
@@ -294,7 +294,7 @@ class ServerlessIotLocal {
     })
   }
 
-  _getFunction(key) {
+  _getFunction (key) {
     const fun = this.service.getFunction(key)
     if (!fun.timeout) {
       fun.timeout = this.service.provider.timeout

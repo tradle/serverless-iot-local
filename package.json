@@ -7,6 +7,7 @@
   "author": "mvayngrib",
   "license": "MIT",
   "scripts": {
+    "lint": "standard",
     "test": "tape '__tests__/**/*'",
     "coverage": "istanbul cover tape tape '__tests__/**/*'"
   },
@@ -33,6 +34,7 @@
     "istanbul": "^0.4.5",
     "pify": "^5.0.0",
     "sinon": "^5.0.3",
+    "standard": "^16.0.3",
     "tape": "^5.3.1"
   }
 }

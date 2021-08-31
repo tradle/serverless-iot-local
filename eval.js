@@ -1,6 +1,7 @@
 // TODO: trim(), ltrim(), etc
 
 const evalInContext = (js, context) => {
+  /* eslint-disable */
   const { clientid, topic, principal } = context
   try {
     return eval(js)
@@ -9,6 +10,7 @@ const evalInContext = (js, context) => {
     console.log(`failed to evaluate: ${js}`)
     throw err
   }
+  /* eslint-enable */
 }
 
 module.exports = evalInContext

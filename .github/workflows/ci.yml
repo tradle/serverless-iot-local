@@ -18,7 +18,8 @@ jobs:
       with:
         node-version: 14.17.3
     - name: Installing dependencies
-      run: |
-        npm i
+      run: npm i
+    - name: Linting code
+      run: npm run lint
     - name: Running unit tests
       run: npm run test

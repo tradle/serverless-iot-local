@@ -22,7 +22,7 @@ function createAWSLifecycleEvent ({ type, clientId, topics }) {
 
 /**
  * https://github.com/aws/aws-sdk-js/blob/master/clients/iot.d.ts#L349
- * 
+ *
  * @param {Object} opts Module options
  * @param {Object} aedesOpts Aedes options
  */
