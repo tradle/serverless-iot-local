@@ -135,7 +135,7 @@ class ServerlessIotLocal {
 
     AWS.mock('IotData', 'publish', (params, callback) => {
       const { topic, payload } = params
-      this.mqttBroker.aeges.publish({ topic, payload }, callback)
+      this.mqttBroker.aedes.publish({ topic, payload }, callback)
     })
 
     AWS.mock('Iot', 'describeEndpoint', (params, callback) => {
