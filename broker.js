@@ -48,7 +48,7 @@ function createMQTTBroker ({ host, port, httpPort, redis }, debug) {
     debug(`Aedes http is up and running at ${host}:${httpPort}`)
   })
 
-  return { aedes, tcp, http, persistence, mq }
+  return { aedes, tcp, http, persistence }
 
   function publishClient (type, clientId) {
     debug(`Publishing client ${type}/${clientId}`)
