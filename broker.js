@@ -1,7 +1,6 @@
 const Aedes = require('aedes')
 const { createServer } = require('aedes-server-factory')
 const aedesPersistenceRedis = require('aedes-persistence-redis')
-const mqEmitterRedis = require('mqemitter-redis')
 
 function createAWSLifecycleEvent ({ type, clientId, topics }) {
   // http://docs.aws.amazon.com/iot/latest/developerguide/life-cycle-events.html#subscribe-unsubscribe-events
@@ -28,8 +27,7 @@ function createAWSLifecycleEvent ({ type, clientId, topics }) {
  */
 function createMQTTBroker ({ host, port, httpPort, redis }, debug) {
   const persistence = aedesPersistenceRedis(redis)
-  const mq = mqEmitterRedis(redis)
-  const aedes = new Aedes({ mq, persistence })
+  const aedes = new Aedes({ persistence })
   aedes.on('ready', () => debug('Aedes server is up and running'))
   aedes.on('client', client => publishClient('connected', client.id))
   aedes.on('clientDisconnect', client => publishClient('disconnected', client.id))
