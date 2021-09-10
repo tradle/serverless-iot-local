@@ -113,7 +113,6 @@ class ServerlessIotLocal {
       this.mqttBroker.http.close(() => {
         this.mqttBroker.aedes.close(() => {
           this.mqttBroker.persistence.destroy()
-          this.mqttBroker.mq.close()
         })
       })
     })
