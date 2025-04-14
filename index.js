@@ -169,7 +169,7 @@ class ServerlessIotLocal {
     )
 
     if (offline) {
-      return offline.options.port
+      return offline.options.httpPort || offline.options.port
     }
   }
 
