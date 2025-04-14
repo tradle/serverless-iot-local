@@ -76,7 +76,7 @@ class ServerlessIotLocal {
       'iot:start:startHandler': this.startHandler.bind(this),
       'before:offline:start:init': this.startHandler.bind(this),
       'before:offline:start': this.startHandler.bind(this),
-      'before:offline:start:end': this.endHandler.bind(this)
+      // 'before:offline:start:end': this.endHandler.bind(this)
     }
   }
 
