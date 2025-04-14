@@ -15,6 +15,6 @@ test('evalInContext - evals function in context', (t) => {
 })
 
 test('throws error if variable does not exist', (t) => {
-  t.throws((() => evalInContext('notHere', {})))
+  t.throws(() => evalInContext('notHere', {}))
   t.end()
 })

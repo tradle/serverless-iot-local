@@ -33,16 +33,16 @@ test('parseSelect - parses multiple SELECT properties correctly', (t) => {
   const subject = "SELECT name, age, maleOrFemale AS gender FROM 'topic'"
   const results = parseSelect(subject)
   t.deepEqual(results.select, [
-    { field: 'name', alias: undefined},
+    { field: 'name', alias: undefined },
     { field: 'age', alias: undefined },
-    { field: 'maleOrFemale', alias: 'gender'}
+    { field: 'maleOrFemale', alias: 'gender' }
   ])
   t.end()
 })
 
 test('applySelect - Simple select with buffered string handled correctly', (t) => {
   const select = [{ field: '*', alias: undefined }]
-  const payload = Buffer.from(JSON.stringify({name: 'Bob'}), 'utf8')
+  const payload = Buffer.from(JSON.stringify({ name: 'Bob' }), 'utf8')
   const context = {}
   const event = applySelect({ select, payload, context })
   t.deepEqual(event, { name: 'Bob' })
@@ -63,7 +63,7 @@ test('applySelect - Aliased wildcard with non-JSON handled correctly', (t) => {
   const payload = 'Bob'
   const context = {}
   const event = applySelect({ select, payload, context })
-  t.deepEqual(event, { 'name': 'Bob'})
+  t.deepEqual(event, { name: 'Bob' })
   t.end()
 })
 
@@ -72,8 +72,8 @@ test('applySelect - Unaliased wildcard plus function results in flattened output
     { field: '*', alias: undefined },
     { field: 'clientid()', alias: undefined }
   ]
-  const clientIdFunc = sinon.stub().returns(undefined);
-  const payload = Buffer.from(JSON.stringify({name: 'Bob'}), 'utf8')
+  const clientIdFunc = sinon.stub().returns(undefined)
+  const payload = Buffer.from(JSON.stringify({ name: 'Bob' }), 'utf8')
   const context = { clientid: clientIdFunc }
   const event = applySelect({ select, payload, context })
   t.ok(clientIdFunc.calledOnce)
@@ -86,8 +86,8 @@ test('applySelect - Aliased wildcard plus function results in nested output', (t
     { field: '*', alias: 'message' },
     { field: 'clientid()', alias: undefined }
   ]
-  const clientIdFunc = sinon.stub().returns(undefined);
-  const payload = Buffer.from(JSON.stringify({name: 'Bob'}), 'utf8')
+  const clientIdFunc = sinon.stub().returns(undefined)
+  const payload = Buffer.from(JSON.stringify({ name: 'Bob' }), 'utf8')
   const context = { clientid: clientIdFunc }
   const event = applySelect({ select, payload, context })
   t.ok(clientIdFunc.calledOnce)
@@ -101,10 +101,10 @@ test('applySelect - Function results are appeneded to output', (t) => {
     { field: 'clientid()', alias: 'theClientId' }
   ]
   const clientIdFunc = sinon.stub().returns('12345')
-  const payload = Buffer.from(JSON.stringify({name: 'Bob'}), 'utf8')
+  const payload = Buffer.from(JSON.stringify({ name: 'Bob' }), 'utf8')
   const context = { clientid: clientIdFunc }
   const event = applySelect({ select, payload, context })
   t.ok(clientIdFunc.calledOnce)
-  t.deepEqual(event, { message: { name: 'Bob' }, 'theClientId': '12345' })
+  t.deepEqual(event, { message: { name: 'Bob' }, theClientId: '12345' })
   t.end()
 })
