@@ -20,33 +20,30 @@ const getFunctionOptions = (fun, key, servicePath) => {
   }
 }
 
-// Custom implementation of createLambdaContext
-const createLambdaContext = (fun, callback = () => {}) => {
-  const timeout = fun.timeout || 6
-  const memorySize = fun.memorySize || 1024
+const createLambdaContext = (fun, cb) => {
+  const functionName = fun.name;
+  const endTime = new Date().getTime() + (fun.timeout ? fun.timeout * 1000 : 6000);
+  const done = typeof cb === 'function' ? cb : ((x, y) => x || y); // eslint-disable-line no-extra-parens
 
   return {
-    awsRequestId: Math.random().toString(36).substring(2),
-    callbackWaitsForEmptyEventLoop: true,
-    functionName: fun.name,
-    functionVersion: '$LATEST',
-    invokedFunctionArn: `arn:aws:lambda:us-east-1:123456789012:function:${fun.name}`,
-    memoryLimitInMB: memorySize,
-    timeout: timeout,
-    getRemainingTimeInMillis: () => timeout * 1000,
-    done: (error, result) => {
-      callback(error, result)
-      return result
-    },
-    fail: (error) => {
-      callback(error)
-    },
-    succeed: (result) => {
-      callback(null, result)
-      return result
-    }
-  }
-}
+    /* Methods */
+    done,
+    succeed: res => done(null, res),
+    fail:    err => done(err, null),
+    getRemainingTimeInMillis: () => Math.max(0, endTime - new Date().getTime()),
+
+    /* Properties */
+    functionName,
+    memoryLimitInMB:    fun.memorySize,
+    functionVersion:    `offline_functionVersion_for_${functionName}`,
+    invokedFunctionArn: `offline_invokedFunctionArn_for_${functionName}`,
+    awsRequestId:       `offline_awsRequestId_${Math.random().toString(10).slice(2)}`,
+    logGroupName:       `offline_logGroupName_for_${functionName}`,
+    logStreamName:      `offline_logStreamName_for_${functionName}`,
+    identity:           {},
+    clientContext:      {},
+  };
+};
 
 // Custom implementation of functionHelper.createHandler
 const createHandler = (options, serverlessOptions) => {
