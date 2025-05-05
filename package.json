@@ -30,6 +30,7 @@
     "debug": "^3.2.7",
     "istanbul": "^0.4.5",
     "pify": "^5.0.0",
+    "serverless-offline": "github:tradle/serverless-offline#8.8.0",
     "sinon": "^5.0.3",
     "standard": "^16.0.3",
     "tape": "^5.3.1"
