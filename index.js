@@ -8,12 +8,80 @@ AWS.setSDK(path.resolve('node_modules/aws-sdk'))
 const IP = require('ip')
 const SQL = require('./sql')
 const createMQTTBroker = require('./broker')
+// TODO: send PR to serverless-offline to export this
+// const functionHelper = require('@tradle/serverless-offline/src/functionHelper')
+// const createLambdaContext = require('@tradle/serverless-offline/src/createLambdaContext')
 
-// Updated imports for serverless-offline 8.8.0
-// In 8.8.0, these are modules with different structures
-const { InProcessRunner } = require('serverless-offline/dist/lambda/handler-runner/in-process-runner')
-const LambdaContext = require('serverless-offline/dist/lambda/LambdaContext')
+// Replace the imports from @tradle/serverless-offline
+// const functionHelper = require('@tradle/serverless-offline/src/functionHelper')
+// const createLambdaContext = require('@tradle/serverless-offline/src/createLambdaContext')
 
+// Custom implementation of functionHelper.getFunctionOptions
+const getFunctionOptions = (fun, key, servicePath) => {
+  return {
+    functionName: key,
+    handlerName: fun.handler.split('.').pop(),
+    handlerPath: path.join(servicePath, fun.handler.split('.').slice(0, -1).join('.')),
+    runtime: fun.runtime,
+    timeout: fun.timeout
+  }
+}
+
+// Custom implementation of createLambdaContext
+const createLambdaContext = (fun, callback = () => {}) => {
+  const timeout = fun.timeout || 6
+  const memorySize = fun.memorySize || 1024
+
+  return {
+    awsRequestId: Math.random().toString(36).substring(2),
+    callbackWaitsForEmptyEventLoop: true,
+    functionName: fun.name,
+    functionVersion: '$LATEST',
+    invokedFunctionArn: `arn:aws:lambda:us-east-1:123456789012:function:${fun.name}`,
+    memoryLimitInMB: memorySize,
+    timeout: timeout,
+    getRemainingTimeInMillis: () => timeout * 1000,
+    done: (error, result) => {
+      callback(error, result)
+      return result
+    },
+    fail: (error) => {
+      callback(error)
+    },
+    succeed: (result) => {
+      callback(null, result)
+      return result
+    }
+  }
+}
+
+// Custom implementation of functionHelper.createHandler
+const createHandler = (options, serverlessOptions) => {
+  const { handlerPath, handlerName } = options
+
+  // Clear require cache if skipCacheInvalidation is not true
+  if (!serverlessOptions.skipCacheInvalidation) {
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes(handlerPath)) {
+        delete require.cache[key]
+      }
+    })
+  }
+
+  // Import the handler module
+  try {
+    const handlerModule = require(handlerPath)
+    const handler = handlerModule[handlerName]
+
+    if (typeof handler !== 'function') {
+      throw new Error(`Handler '${handlerName}' is not a function in '${handlerPath}'`)
+    }
+
+    return handler
+  } catch (err) {
+    throw new Error(`Error while loading ${handlerPath}: ${err.message}`)
+  }
+}
 const VERBOSE = typeof process.env.SLS_DEBUG !== 'undefined'
 const defaultOpts = {
   host: 'localhost',
@@ -168,22 +236,7 @@ class ServerlessIotLocal {
       const fun = this._getFunction(key)
       const funName = key
       const servicePath = path.join(this.serverless.config.servicePath, location)
-
-      // Extract handler path and name for later use
-      const handlerPath = fun.handler.split('.')[0]
-      const handlerName = fun.handler.split('.')[1]
-
-      const funOptions = {
-        functionName: key,
-        functionPath: handlerPath,
-        functionName: handlerName,
-        servicePath: servicePath,
-        handler: fun.handler,
-        runtime: fun.runtime || this.service.provider.runtime,
-        timeout: fun.timeout || this.service.provider.timeout,
-        memorySize: fun.memorySize || this.service.provider.memorySize || 1024
-      }
-
+      const funOptions = functionHelper.getFunctionOptions(fun, key, servicePath)
       this.debug(`funOptions ${JSON.stringify(funOptions, null, 2)} `)
 
       if (!fun.environment) {
@@ -193,7 +246,7 @@ class ServerlessIotLocal {
       fun.environment.AWS_LAMBDA_FUNCTION_NAME = `${this.service.service}-${this.service.provider.stage}-${funName}`
 
       this.debug('')
-      this.debug(funName, 'runtime', runtime)
+      this.debug(funName, 'runtime', runtime, funOptions.babelOptions || '')
       this.debug(`events for ${funName}:`)
 
       if (!(fun.events && fun.events.length)) {
@@ -288,60 +341,23 @@ class ServerlessIotLocal {
             }
           })
 
+          let handler // The lambda function
           try {
-            // Set environment variables
             process.env = _.extend({}, this.service.provider.environment, this.service.functions[name].environment, this.originalEnvironment)
             process.env.SERVERLESS_OFFLINE_PORT = apiGWPort
             process.env.AWS_LAMBDA_FUNCTION_NAME = this.service.service + '-' + this.service.provider.stage
             process.env.AWS_REGION = this.service.provider.region
-
-            // Create Lambda context using the new LambdaContext class
-            const lambdaContext = new LambdaContext({
-              functionName: name,
-              memorySize: fn.memorySize || this.service.provider.memorySize || 1024,
-              timeout: fn.timeout || this.service.provider.timeout || 6,
-              region: this.service.provider.region || 'us-east-1',
-              runtime: fn.runtime || this.service.provider.runtime,
-              handler: fn.handler
-            })
-
-            // Configure the callback function
-            const callback = (err, result) => {
-              if (err) {
-                this.log(`Error in Lambda execution: ${err}`)
-              }
-              this.requests[requestId].done = true
-              return result
-            }
-
-            // Create an InProcessRunner instance to run the handler
-            const runner = new InProcessRunner({
-              handlerPath: path.join(servicePath, options.functionPath),
-              handlerName: options.functionName,
-              timeoutMs: (fn.timeout || this.service.provider.timeout || 6) * 1000,
-              runtime: fn.runtime || this.service.provider.runtime,
-              serverlessPath: servicePath,
-              keepRequestId: true,
-              environment: process.env
-            })
-
-            // Run the Lambda function
-            runner.run(event, lambdaContext)
-              .then(result => {
-                this.debug(`Lambda ${name} executed successfully`)
-                this.requests[requestId].done = true
-                return result
-              })
-              .catch(err => {
-                this.log(`Error in Lambda ${name}: ${err}`)
-                this.requests[requestId].done = true
-                return null
-              })
-
+            handler = functionHelper.createHandler(options, this.options)
           } catch (err) {
-            this.log(`Error while executing ${name}: ${err.stack}, ${requestId}`)
-            this.requests[requestId].done = true
+            this.log(`Error while loading ${name}: ${err.stack}, ${requestId}`)
             return
+          }
+
+          const lambdaContext = createLambdaContext(fn)
+          try {
+            handler(event, lambdaContext, lambdaContext.done)
+          } catch (error) {
+            this.log(`Uncaught error in your '${name}' handler: ${error.stack}, ${requestId}`)
           }
         })
       })
@@ -357,6 +373,7 @@ class ServerlessIotLocal {
     return fun
   }
 }
+
 
 function isLocalHost (host) {
   return host === '0.0.0.0' || host === '127.0.0.1' || host === 'localhost'
